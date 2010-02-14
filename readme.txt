@@ -25,7 +25,7 @@ Here we have passed to arguments to the WordPress core function do_action(). The
 * fullsize
 
 ==Installation==
-1. [Download](http://wordpress.org/extend/plugins/taxonomy-list-shortcode/)
+1. Download
 1. Unzip the package and upload to your /wp-content/plugins/ directory.
 1. Log into WordPress and navigate to the "Plugins" panel.
 1. Activate the plugin.
