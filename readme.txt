@@ -16,7 +16,7 @@ The Taxonomy Images plugin allows users to associate images from the Media Libra
 
 `<?php do_action( 'taxonomy_image_plugin_print_image_html', 'detail' ); ?>`
 
-Here we have passed to arguments to the WordPress core function do_action(). The first is `taxonomy_image_plugin_print_image_html` and should not be changed. The second represents the size of the image that you would like displayed. acceptable values are: 
+Here we have passed to arguments to the WordPress core function do_action(). The first is `taxonomy_image_plugin_print_image_html` and should not be changed. The second represents the size of the image that you would like displayed. Acceptable values are: 
 
 * detail
 * thumbnail
@@ -32,5 +32,5 @@ Here we have passed to arguments to the WordPress core function do_action(). The
 
 ==Changelog==
 
-=0.2=
+= 0.2 =
 * Original Release - Works With: wp 2.9.1.
