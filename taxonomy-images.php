@@ -3,7 +3,7 @@
 Plugin Name: Taxonomy Images BETA
 Plugin URI: http://wordpress.org/extend/plugins/taxonomy-images/
 Description: The Taxonomy Images plugin enables you to associate images from your Media Library to categories, tags and taxonomies.
-Version: 0.2
+Version: 0.3
 Author: Michael Fields
 Author URI: http://mfields.org/
 License: GPLv2
@@ -28,7 +28,8 @@ TODO LIST:
 	2.	Set up for localization.
 	3.	Change name of media upload button so that it reflects tag and taxonomies.
 	4.	Make border appear around image on successful association.
-	5.	Support for Link Category Images?	
+	5.	Support for Link Category Images?
+	6.	Add support for wp_list_categories() or create new functionality based on wp_list_categories()
 */
 
 if( !function_exists( 'pr' ) ) {
@@ -41,7 +42,7 @@ if( !function_exists( 'pr' ) ) {
 /**
 * @package Crop
 */
-if( !class_exists( 'platypus_category_thumbs' ) ) {
+if( !class_exists( 'taxonomy_images_plugin' ) ) {
 	/**
 	* Category Thumbs
 	* @author Michael Fields <michael@mfields.org>
@@ -50,18 +51,19 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 	* @package Plugins
 	* @filesource
 	*/
-	class platypus_category_thumbs {
-		private $locale = 'taxonomy_image_plugin';
+	class taxonomy_images_plugin {
+		public $settings = array();
+		public $locale = 'taxonomy_image_plugin';
 		private $permission = 'manage_categories';
 		private $ajax_action = 'update_relationship';
 		private $attr_slug = 'mf_term_id';
 		private $detail_size = array( 75, 75, false );
-		private $settings = array();
 		private $core_taxonomies = array( 'category', 'post_tag', 'link_category' );
 		private $custom_taxonomies = array();
 		private $current_taxonomy = false;
 		private $plugin_basename = '';
-		private $wordpress_version = '2.8.4';
+		private $min_version_wordpress = '2.9.1'; /* Due to te use of add_image_size() */
+		private $min_version_php = '5';
 		public function __construct() {
 			/* Set Properties */
 			$this->dir = dirname( __FILE__ );
@@ -72,7 +74,6 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 			
 			/* Plugin Registration Hooks */
 			register_activation_hook( __FILE__, array( &$this, 'activate' ) );
-			register_deactivation_hook( __FILE__, array( &$this, 'deactivate' ) );
 			
 			/* General Hooks. */
 			add_action( 'init', array( &$this, 'add_new_image_size' ) );
@@ -88,18 +89,18 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 			
 			/* Category Admin Hooks. */
 			add_filter( 'manage_categories_columns', array( &$this, 'category_columns' ) );
-			add_filter( 'manage_categories_custom_column', array( &$this, 'category_rows' ), 1, 3 );
+			add_filter( 'manage_categories_custom_column', array( &$this, 'category_rows' ), 15, 3 );
 			add_action( 'admin_print_scripts-categories.php', array( &$this, 'scripts' ) );
 			add_action( 'admin_print_styles-categories.php', array( &$this, 'styles' ) );
 			
 			/* Tag + Taxonomy Admin Hooks. */
 			add_filter( 'manage_edit-tags_columns', array( &$this, 'category_columns' ) );
-			add_filter( 'manage_post_tag_custom_column', array( &$this, 'category_rows' ), 1, 3 );
+			add_filter( 'manage_post_tag_custom_column', array( &$this, 'category_rows' ), 15, 3 );
 			add_action( 'admin_print_scripts-edit-tags.php', array( &$this, 'scripts' ) );
 			add_action( 'admin_print_styles-edit-tags.php', array( &$this, 'styles' ) );
 			
 			/* Custom Actions for front-end. */
-			add_action( $this->locale . '_print_image_html', array( &$this, 'print_image_html' ), 1, 2 );
+			add_action( $this->locale . '_print_image_html', array( &$this, 'print_image_html' ), 1, 3 );
 			$this->debug_hooks();
 		}
 		public function set_current_taxonomy() {
@@ -124,7 +125,7 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 			foreach( $wp_taxonomies as $name => $data ) {
 				if( !in_array( $name, $this->core_taxonomies ) ) {
 					$this->custom_taxonomies[ $name ] = $data;
-					add_filter( 'manage_' . $name . '_custom_column', array( &$this, 'category_rows' ), 1, 3 );
+					add_filter( 'manage_' . $name . '_custom_column', array( &$this, 'category_rows' ), 15, 3 );
 				}
 			}
 		}
@@ -145,10 +146,18 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 		* Terminates script execution and prints a link
 		* for user to upgrade WordPress.
 		*/
-		public function installation_fail( $errno, $errstr, $errfile, $errline ) {
+		public function installation_fail_wordpress( $errno, $errstr, $errfile, $errline ) {
 			global $wp_version;
 			$upgrade = admin_url() . 'update-core.php';
-			exit( 'The Taxonomy Image Plugin requires WordPress version ' . $this->wordpress_version . ' or greater. You are currently using version ' . $wp_version . ' of WordPress. To succesfuly activate this plugin, please <a target="_top" href="' . $upgrade . '">Upgrade WordPress</a>' );
+			exit( 'The Taxonomy Image Plugin requires WordPress version ' . $this->min_version_wordpress . ' or greater. You are currently using version ' . $wp_version . ' of WordPress. To succesfuly activate this plugin, please <a target="_top" href="' . $upgrade . '">Upgrade WordPress</a>' );
+		}
+		/*
+		* Special error handling function for activation
+		* Terminates script execution and prints a notice
+		* for user to upgrade PHP.
+		*/
+		public function installation_fail_php( $errno, $errstr, $errfile, $errline ) {
+			exit( 'The Taxonomy Image Plugin requires PHP version ' . $this->min_version_php . ' or greater. You are currently using version ' . PHP_VERSION . ' of PHP. Please update if you would like to use this plugin.' );
 		}
 		/*
 		* Checks that current version of WordPress is adequate for installation.
@@ -161,24 +170,22 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 		*/
 		public function activate() {
 			global $wp_version;
-			if ( version_compare( $wp_version, $this->wordpress_version, '<' ) ) {
+			if ( version_compare( $wp_version, $this->min_version_wordpress, '<' ) ) {
 				deactivate_plugins( $this->plugin_basename, true );
-				$old_error_handler = set_error_handler( array( &$this, 'installation_fail' ) );
+				$old_error_handler = set_error_handler( array( &$this, 'installation_fail_wordpress' ) );
 				trigger_error( 'You are using WordPress version ' . $wp_version, E_USER_ERROR );
+			}
+			else if ( version_compare( PHP_VERSION, $this->min_version_php, '<' ) ) {
+				deactivate_plugins( $this->plugin_basename, true );
+				$old_error_handler = set_error_handler( array( &$this, 'installation_fail_php' ) );
+				trigger_error( 'You are using PHP version ' . $wp_version, E_USER_ERROR );
 			}
 			else {
 				add_option( $this->locale, array() );
 			}
 		}
 		/*
-		* Currently disabled.
-		*/
-		public function deactivate() {
-			#return true;
-			delete_option( $this->locale );
-		}
-		/*
-		* Ensures that all key/vale pairs in an array are integers.
+		* Ensures that all key/value pairs in an array are integers.
 		* @param $array (array)
 		* @return (array)
 		*/
@@ -216,15 +223,11 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 				return "\n" . $c . '<img class="hide-if-js" src="' . $this->url . 'no-javascript.png" alt="Please enable javascript." /><div class="hide-if-no-js">' . "\n" . '<a class="thickbox" onclick="return false;" href="' . $href . '" style="display:block;height:77px;width:77px;overflow:hidden;text-align:center;"><img' . $style . ' id="' . $id . '" src="' . $img . '" alt="" /></a></div>';
 			}
 		}
-		public function category_columns( $c ) {
-			return array(
-				'cb' => '<input type="checkbox" />',
-				'custom' => __('Image', $this->locale ),
-				'name' => __('Name'),
-				'description' => __('Description'),
-				'slug' => __('Slug'),
-				'posts' => __('Posts')
-			);
+		public function category_columns( $original_columns ) {
+			$new_columns = $original_columns;
+			array_splice( $new_columns, 1 ); /* isolate the checkbox column */
+			$new_columns['custom'] = __('Image', $this->locale ); /* Add custom column */
+			return array_merge( $new_columns, $original_columns ); 
 		}
 		private function term_tax_id( $term ) {
 			if( empty( $this->current_taxonomy ) )
@@ -235,17 +238,21 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 			else
 				return false;
 		}
-		public function print_image_html( $size = 'medium', $title = true ) {
-			print $this->get_image_html( $size, $title );
+		public function print_image_html( $size = 'medium', $term_tax_id = false, $title = true ) {
+			print $this->get_image_html( $size, $term_tax_id, $title );
 		}
 		/*
 		* @uses $wp_query
 		*/
-		public function get_image_html( $size = 'medium', $title = true ) {
+		public function get_image_html( $size = 'medium', $term_tax_id = false, $title = true ) {
 			$o = '';
-			global $wp_query;
-			$mfields_queried_object = $wp_query->get_queried_object();
-			$term_tax_id = (int) $mfields_queried_object->term_taxonomy_id;
+			if( !$term_tax_id ) {
+				global $wp_query;
+				$mfields_queried_object = $wp_query->get_queried_object();
+				$term_tax_id = $mfields_queried_object->term_taxonomy_id;
+			}
+			
+			$term_tax_id = (int) $term_tax_id;
 			
 			if( isset( $this->settings[ $term_tax_id ] ) ) {
 				$attachment_id = (int) $this->settings[ $term_tax_id ];
@@ -293,8 +300,8 @@ if( !class_exists( 'platypus_category_thumbs' ) ) {
 				return false;
 		}
 		public function debug() {
-			global $wp_taxonomies;
 			/*
+			global $wp_taxonomies;
 			pr( $this->current_taxonomy );
 			pr( WP_PLUGIN_URL.'/'.str_replace(basename( __FILE__),"",plugin_basename(__FILE__)) );
 			pr( WP_PLUGIN_URL.'/' );
@@ -400,7 +407,7 @@ EOF;
 			<?php
 		}
 	}
-	$platypus_category_thumbs = new platypus_category_thumbs();
+	$taxonomy_images_plugin = new taxonomy_images_plugin();
 }
 
 ?>
