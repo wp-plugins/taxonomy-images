@@ -16,7 +16,11 @@ __IMPORTANT NOTICE:__ If you are upgrading from version 0.2 - please delete the 
 
 `register_deactivation_hook( __FILE__, array( &$this, 'deactivate' ) );`
 
-The Taxonomy Images plugin allows users to associate images from the Media Library to categories, tags and custom taxonomies. For usage instructions please view the [screencast](http://screenr.com/zMx). To display the images in your theme, you will want to use the following code in the appropriate theme file. The correct file will vary depending on your theme. category.php, tag.php, archive.php are a few file that this code will work in. Please see [Template Hierarchy](http://codex.wordpress.org/Template_Hierarchy) for more information.
+The Taxonomy Images plugin allows users to associate images from the Media Library to categories, tags and custom taxonomies. For usage instructions please view the [screencast](http://screenr.com/zMx).
+
+= Displaying Images in your Theme #1: Category, Tag + Custom Taxonomy archives =
+
+To display the images in your theme, you will want to use the following code in the appropriate theme file. The correct file will vary depending on your theme. category.php, tag.php, archive.php are a few file that this code will work in. Please see [Template Hierarchy](http://codex.wordpress.org/Template_Hierarchy) for more information.
 
 `<?php do_action( 'taxonomy_image_plugin_print_image_html', 'detail' ); ?>`
 
@@ -27,6 +31,31 @@ Here we have passed to arguments to the WordPress core function do_action(). The
 * medium
 * large
 * fullsize
+
+= Displaying Images in your Theme #2: Category Thumbs =
+
+The following example was inspired by [this thread](http://wordpress.org/support/topic/364299) in the WordPress.org Support Fourms. This code can be placed inside any theme template and will produce a string of links for every taxonomy that has an associated image.
+
+`$cats = get_categories();
+foreach ( $cats as $c ) {
+	$url = get_category_link( $c->term_id );
+	$img = $taxonomy_images_plugin->get_image_html( 'detail', $c->term_taxonomy_id );
+	if( !empty( $img ) )
+		print '<a href="' . $url . '">' . $img . '</a>';
+}`
+
+= Support =
+If you find that this plugin is has a bug, does not play nicely with other plugins or if you have a suggestion or comment, please <a href="http://wordpress.org/tags/taxonomy-images?forum_id=10#postform">use this link to add a new thread to the WordPress Support Forum</a>
+
+= Hook it up yo! =
+If you have fallen in love with this plugin and would not be able to sleep without help out in some way, please see the following list of ways that you can _hook it up yo!_:
+
+* Rate it! - use the star tool on the bottom right of the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to tells us what you think.
+* Let us know if it works - Use the _Compatibility_ widget on the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to let us know that the current version works with your version of WordPress.
+* Do you Twitter? Help promote by using this shortlink: [http://bit.ly/taxonomy-images](http://bit.ly/taxonomy-images)
+* Are you a writer? Help promote by writing an article on your website about this plugin.
+* Are you Super-Wicked-Awesome? If so, you can always make a [paypal donation](http://mfields.org/donate/).
+
 
 ==Installation==
 1. Download
