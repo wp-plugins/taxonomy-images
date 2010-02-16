@@ -48,13 +48,13 @@ foreach ( $cats as $c ) {
 If you find that this plugin is has a bug, does not play nicely with other plugins or if you have a suggestion or comment, please <a href="http://wordpress.org/tags/taxonomy-images?forum_id=10#postform">use this link to add a new thread to the WordPress Support Forum</a>
 
 = Hook it up yo! =
-If you have fallen in love with this plugin and would not be able to sleep without help out in some way, please see the following list of ways that you can _hook it up yo!_:
+If you have fallen in love with this plugin and would not be able to sleep without helping out in some way, please see the following list of ways that you can _hook it up yo!_:
 
-* Rate it! - use the star tool on the bottom right of the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to tells us what you think.
-* Let us know if it works - Use the _Compatibility_ widget on the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to let us know that the current version works with your version of WordPress.
-* Do you Twitter? Help promote by using this shortlink: [http://bit.ly/taxonomy-images](http://bit.ly/taxonomy-images)
-* Are you a writer? Help promote by writing an article on your website about this plugin.
-* Are you Super-Wicked-Awesome? If so, you can always make a [paypal donation](http://mfields.org/donate/).
+* __Rate it!__ - use the star tool on the right-hand sidebar of the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to tells me what you think.
+* __Let me know if it works__ - Use the _Compatibility_ widget on the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to let me know that the current version works with your version of WordPress.
+* __Do you Twitter?__ Help promote by using this shortlink: [http://bit.ly/taxonomy-images](http://bit.ly/taxonomy-images)
+* __Are you a writer?__ Help promote by writing an article on your website about this plugin.
+* __Are you Super-Wicked-Awesome?__ If so, you can always [make a donation](http://mfields.org/donate/).
 
 
 ==Installation==
