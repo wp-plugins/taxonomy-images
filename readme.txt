@@ -12,11 +12,10 @@ Enables users to associate images in their Media Library to categories, tags and
 
 ==Description==
 
-__IMPORTANT NOTICE:__ If you are upgrading from version 0.2 - please delete the code found on line 75 BEFORE you upgrade. If you fail todo this, and you deactivete the plugin all of your associations will be lost. The offending code looks like this:
 
-`register_deactivation_hook( __FILE__, array( &$this, 'deactivate' ) );`
+The Taxonomy Images plugin allows users to associate images from the Media Library to categories, tags and custom taxonomies. For usage instructions please view the screencast below.
 
-The Taxonomy Images plugin allows users to associate images from the Media Library to categories, tags and custom taxonomies. For usage instructions please view the [screencast](http://screenr.com/zMx).
+[youtube http://www.youtube.com/watch?v=bvE_x8GXwhc]
 
 = Displaying Images in your Theme #1: Category, Tag + Custom Taxonomy archives =
 
@@ -65,6 +64,8 @@ If you have fallen in love with this plugin and would not be able to sleep witho
 
 ==Changelog==
 
+= 0.4 =
+* __UPDATE:__ Added shortcode "taxonomy_image_plugin_list_term_images"
 = 0.3 =
 * __COMPAT:__ Changed the firing order of every hook untilizing the 'category_rows' method to 15. This allows this plugin to be compatible with [Reveal IDs for WP Admin](http://wordpress.org/extend/plugins/reveal-ids-for-wp-admin-25/). Thanks to [Peter Kahoun](http://profiles.wordpress.org/kahi/)
 * __COMPAT:__ Added Version check for PHP5.
