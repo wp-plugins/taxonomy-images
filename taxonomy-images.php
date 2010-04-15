@@ -3,7 +3,7 @@
 Plugin Name: Taxonomy Images BETA
 Plugin URI: http://wordpress.org/extend/plugins/taxonomy-images/
 Description: The Taxonomy Images plugin enables you to associate images from your Media Library to categories, tags and taxonomies.
-Version: 0.3
+Version: 0.4
 Author: Michael Fields
 Author URI: http://mfields.org/
 License: GPLv2
@@ -38,7 +38,6 @@ if( !function_exists( 'pr' ) ) {
 	}
 }
 
-
 /**
 * @package Crop
 */
@@ -57,7 +56,7 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 		private $permission = 'manage_categories';
 		private $ajax_action = 'update_relationship';
 		private $attr_slug = 'mf_term_id';
-		private $detail_size = array( 75, 75, false );
+		private $detail_size = array( 75, 75, true );
 		private $core_taxonomies = array( 'category', 'post_tag', 'link_category' );
 		private $custom_taxonomies = array();
 		private $current_taxonomy = false;
@@ -87,11 +86,15 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			add_action( 'admin_head-media-upload-popup', array( &$this, 'media_popup_script' ), 2000 );
 			add_action( 'wp_ajax_' . $this->ajax_action, array( &$this, 'process_ajax' ), 10 );
 			
-			/* Category Admin Hooks. */
+			/* Category Admin Hooks for backward compatibility with 2.9 branch. I think that these are deprecated hooks. */
 			add_filter( 'manage_categories_columns', array( &$this, 'category_columns' ) );
 			add_filter( 'manage_categories_custom_column', array( &$this, 'category_rows' ), 15, 3 );
+			
+			/* Category Admin Hooks. */
 			add_action( 'admin_print_scripts-categories.php', array( &$this, 'scripts' ) );
 			add_action( 'admin_print_styles-categories.php', array( &$this, 'styles' ) );
+			add_filter( 'manage_category_columns', array( &$this, 'category_columns' ) );
+			add_filter( 'manage_category_custom_column', array( &$this, 'category_rows' ), 15, 3 );
 			
 			/* Tag + Taxonomy Admin Hooks. */
 			add_filter( 'manage_edit-tags_columns', array( &$this, 'category_columns' ) );
@@ -101,7 +104,66 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			
 			/* Custom Actions for front-end. */
 			add_action( $this->locale . '_print_image_html', array( &$this, 'print_image_html' ), 1, 3 );
+			add_shortcode( $this->locale, array( &$this, 'list_term_images_shortcode' ) );
 			$this->debug_hooks();
+		}
+		public function get_fullsize_image_dimensions( $term_tax_id ) {
+			$post_id = ( array_key_exists( $term_tax_id, $this->settings ) )
+				? $this->settings[$term_tax_id]
+				: false;
+			$meta = ( $post_id )
+				? get_post_meta( $post_id, '_wp_attachment_metadata', true )
+				: false;
+			return $meta;
+		}
+		public function list_term_images_shortcode( $atts = array() ) {
+			$o = '';
+			$defaults = array(
+				// 'id' => false,
+				'taxonomy' => 'category',
+				'size' => 'detail',
+				'template' => 'list'
+				);
+				
+			extract( shortcode_atts( $defaults, $atts ) );
+			
+			/* No taxonomy defined return an html comment. */
+			if( !is_taxonomy( $taxonomy ) ) {
+				$tax = strip_tags( trim( $taxonomy ) );
+				return '<!--' . $this->locale . ' error: Taxonomy "' . $taxonomy . '" is not defined.-->';
+			}
+			
+			$terms = get_terms( $taxonomy );
+			
+			#pr( $this->settings );
+			
+			if( !is_wp_error( $terms ) ) {
+				foreach ( $terms as $term ) {
+					$open = '';
+					$close = '';
+					$img_tag = '';
+					$url = get_term_link( $term, $term->taxonomy );
+					$img = $this->get_image_html( $size, $term->term_taxonomy_id, true, 'left' );
+					$title = apply_filters( 'the_title', $term->name );
+					$title_attr = esc_attr( $term->name . ' (' . $term->count . ')' );
+					$description = apply_filters( 'the_content', $term->description );
+					
+					
+					if( $template === 'grid' ) {
+						$o.= "\n\t" . '<div class="' . $this->locale . '-' . $template . '">';
+						$o.= "\n\t\t" . '<a style="float:left;" title="' . $title_attr . '" href="' . $url . '">' . $img . '</a>';
+						$o.= "\n\t" . '</div>';
+					}
+					else {
+						$o.= "\n\t\t" . '<a title="' . $title_attr . '" href="' . $url . '">' . $img . '</a>';;
+						$o.= "\n\t\t" . '<h2 style="clear:none;margin-top:0;padding-top:0;line-height:1em;"><a href="' . $url . '">' . $title . '</a></h2>';
+						$o.= $description;
+						$o.= "\n\t" . '<div style="clear:both;height:1.5em"></div>';
+						$o.= "\n";
+					}
+				}
+			}
+			return $o;
 		}
 		public function set_current_taxonomy() {
 			if( is_admin() ) {
@@ -219,7 +281,6 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 				$id = $this->locale . '_' . $term_id;
 				$attachment_id = ( isset( $this->settings[ $term_id ] ) ) ? (int) $this->settings[ $term_id ] : false;
 				$img = ( $attachment_id ) ? $this->get_thumb( $attachment_id ) : $this->url . 'default-image.png';
-
 				return "\n" . $c . '<img class="hide-if-js" src="' . $this->url . 'no-javascript.png" alt="Please enable javascript." /><div class="hide-if-no-js">' . "\n" . '<a class="thickbox" onclick="return false;" href="' . $href . '" style="display:block;height:77px;width:77px;overflow:hidden;text-align:center;"><img' . $style . ' id="' . $id . '" src="' . $img . '" alt="" /></a></div>';
 			}
 		}
@@ -238,13 +299,13 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			else
 				return false;
 		}
-		public function print_image_html( $size = 'medium', $term_tax_id = false, $title = true ) {
-			print $this->get_image_html( $size, $term_tax_id, $title );
+		public function print_image_html( $size = 'medium', $term_tax_id = false, $title = true, $align = 'none' ) {
+			print $this->get_image_html( $size, $term_tax_id, $title, $align );
 		}
 		/*
 		* @uses $wp_query
 		*/
-		public function get_image_html( $size = 'medium', $term_tax_id = false, $title = true ) {
+		public function get_image_html( $size = 'medium', $term_tax_id = false, $title = true, $align = 'none' ) {
 			$o = '';
 			if( !$term_tax_id ) {
 				global $wp_query;
@@ -257,10 +318,10 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			if( isset( $this->settings[ $term_tax_id ] ) ) {
 				$attachment_id = (int) $this->settings[ $term_tax_id ];
 				$alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt' );
-				$attachment = get_post( $attachment_id );
+				$attachment = get_post( $attachment_id ); /* Just in case an attachment was deleted, but there is still a record for it in this plugins settings. */
 				if( $attachment !== NULL ) {
-					$title = ( $title ) ? esc_attr( $attachment->post_title ) : '';
-					$o = get_image_tag( $attachment_id, $alt, $title, 'none', $size );
+					$o = get_image_tag( $attachment_id, $alt, '', $align, $size );
+					
 				}
 			}
 			return $o;
@@ -269,6 +330,8 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 		* @param $id (int) Attachment ID
 		*/
 		private function get_thumb( $id ) {
+			global $wp_version;
+			
 			/* Get the originally uploaded size path. */
 			list( $img_url, $img_path ) = get_attachment_icon_src( $id, true );
 			
@@ -277,17 +340,31 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			
 			/* If custom intermediate size cannot be found, attempt to create it. */
 			if( !$img ) {
-				$new = image_resize( $img_path, $this->detail_size[0], $this->detail_size[1], $this->detail_size[2] );
-				if( !is_wp_error( $new ) ) {
-					$meta = wp_generate_attachment_metadata( $id, $img_path );
-					wp_update_attachment_metadata( $id, $meta );
-					$img = image_get_intermediate_size( $id, 'detail' );
+				
+				/* Need to check to see if fullsize path can be found - sometimes this disappears during import/export. */
+				if( !is_file( $img_path ) ) {
+					$wp_upload_dir = wp_upload_dir();
+					$img_path = $wp_upload_dir['path'] . get_post_meta( $id, '_wp_attached_file', true );
+				}
+				
+				if( is_file( $img_path ) ) {
+					$new = image_resize( $img_path, $this->detail_size[0], $this->detail_size[1], $this->detail_size[2] );
+					
+					if( !is_wp_error( $new ) ) {
+						$meta = wp_generate_attachment_metadata( $id, $img_path );
+						wp_update_attachment_metadata( $id, $meta );
+						$img = image_get_intermediate_size( $id, 'detail' );
+					}
 				}
 			}
 			
 			/* Custom intermediate size cannot be created, try for thumbnail. */
 			if( !$img )
 				$img = image_get_intermediate_size( $id, 'thumbnail' );
+			
+			/* Thumbnail cannot be found, try fullsize. */
+			if( !$img )
+				$img['url'] = wp_get_attachment_url( $id );
 			
 			/* Administration */
 			if( !$img && is_admin() )
@@ -394,7 +471,6 @@ EOF;
 									var img = parent.document.getElementById( '<?php print $this->locale . '_' . $term_id; ?>' );
 									$( img ).attr( 'src', data.attachment_thumb_src );
 								}
-
 								/* Close Thickbox */
 								self.parent.tb_remove()
 							}         
@@ -409,5 +485,4 @@ EOF;
 	}
 	$taxonomy_images_plugin = new taxonomy_images_plugin();
 }
-
 ?>

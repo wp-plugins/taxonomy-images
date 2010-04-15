@@ -1,78 +1,1 @@
-===Plugin Name===
-Taxonomy Images
-
-Contributors: mfields
-Donate link: http://mfields.org/donate/
-Tags: taxonomy, tag, category, image, upload, media
-Requires at least: 2.9.1
-Tested up to: 2.9.1
-Stable tag: trunk
-
-Enables users to associate images in their Media Library to categories, tags and taxonomies.
-
-==Description==
-
-
-The Taxonomy Images plugin allows users to associate images from the Media Library to categories, tags and custom taxonomies. For usage instructions please view the screencast below.
-
-[youtube http://www.youtube.com/watch?v=bvE_x8GXwhc]
-
-= Displaying Images in your Theme #1: Category, Tag + Custom Taxonomy archives =
-
-To display the images in your theme, you will want to use the following code in the appropriate theme file. The correct file will vary depending on your theme. category.php, tag.php, archive.php are a few file that this code will work in. Please see [Template Hierarchy](http://codex.wordpress.org/Template_Hierarchy) for more information.
-
-`<?php do_action( 'taxonomy_image_plugin_print_image_html', 'detail' ); ?>`
-
-Here we have passed to arguments to the WordPress core function do_action(). The first is `taxonomy_image_plugin_print_image_html` and should not be changed. The second represents the size of the image that you would like displayed. Acceptable values are: 
-
-* detail
-* thumbnail
-* medium
-* large
-* fullsize
-
-= Displaying Images in your Theme #2: Category Thumbs =
-
-The following example was inspired by [this thread](http://wordpress.org/support/topic/364299) in the WordPress.org Support Fourms. This code can be placed inside any theme template and will produce a string of links for every taxonomy that has an associated image.
-
-`$cats = get_categories();
-foreach ( $cats as $c ) {
-	$url = get_category_link( $c->term_id );
-	$img = $taxonomy_images_plugin->get_image_html( 'detail', $c->term_taxonomy_id );
-	if( !empty( $img ) )
-		print '<a href="' . $url . '">' . $img . '</a>';
-}`
-
-= Support =
-If you find that this plugin is has a bug, does not play nicely with other plugins or if you have a suggestion or comment, please <a href="http://wordpress.org/tags/taxonomy-images?forum_id=10#postform">use this link to add a new thread to the WordPress Support Forum</a>
-
-= Hook it up yo! =
-If you have fallen in love with this plugin and would not be able to sleep without helping out in some way, please see the following list of ways that you can _hook it up yo!_:
-
-* __Rate it!__ - use the star tool on the right-hand sidebar of the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to tells me what you think.
-* __Let me know if it works__ - Use the _Compatibility_ widget on the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to let me know that the current version works with your version of WordPress.
-* __Do you Twitter?__ Help promote by using this shortlink: [http://bit.ly/taxonomy-images](http://bit.ly/taxonomy-images)
-* __Are you a writer?__ Help promote by writing an article on your website about this plugin.
-* __Are you Super-Wicked-Awesome?__ If so, you can always [make a donation](http://mfields.org/donate/).
-
-
-==Installation==
-1. Download
-1. Unzip the package and upload to your /wp-content/plugins/ directory.
-1. Log into WordPress and navigate to the "Plugins" panel.
-1. Activate the plugin.
-
-==Changelog==
-
-= 0.4 =
-* __UPDATE:__ Added shortcode "taxonomy_image_plugin_list_term_images"
-= 0.3 =
-* __COMPAT:__ Changed the firing order of every hook untilizing the 'category_rows' method to 15. This allows this plugin to be compatible with [Reveal IDs for WP Admin](http://wordpress.org/extend/plugins/reveal-ids-for-wp-admin-25/). Thanks to [Peter Kahoun](http://profiles.wordpress.org/kahi/)
-* __COMPAT:__ Added Version check for PHP5.
-* __UPDATE:__ `$settings` and `$locale` are now public properties.
-* __UPDATE:__ Object name changed to: $taxonomy_images_plugin.
-* __UPDATE:__ Added argument $term_tax_id to both print_image_html() and get_image_html().
-* __BUGFIX:__ Deleted the register_deactivation_hook() function -> sorry to all 8 who downloaded this plugin so far :)
-
-= 0.2 =
-* Original Release - Works With: wp 2.9.1.
+===Plugin Name===Taxonomy ImagesContributors: mfieldsDonate link: http://mfields.org/donate/Tags: taxonomy, tag, category, image, upload, mediaRequires at least: 2.9.1Tested up to: 2.9.1Stable tag: trunkEnables users to associate images in their Media Library to categories, tags and taxonomies.==Description==__IMPORTANT NOTICE:__ If you are upgrading from version 0.2 - please delete the code found on line 75 BEFORE you upgrade. If you fail todo this, and you deactivete the plugin all of your associations will be lost. The offending code looks like this:`register_deactivation_hook( __FILE__, array( &$this, 'deactivate' ) );`The Taxonomy Images plugin allows users to associate images from the Media Library to categories, tags and custom taxonomies. For usage instructions please view the [screencast](http://screenr.com/zMx).= Displaying Images in a Page or Post =Version 0.4 introduces a new shortcode which will display a list of all active terms of a given taxonomy. This list features the term in a second level heading `<h2>`, the term description in a paragraph and an intermediate version of the uploaded image floated to the left. Here is the shortcode in it's simplist form:`[taxonomy_image_plugin]`This will display a list of all terms in the built-in "Category" taxonomy with desriptions and images (sized as "thumbnails").If you would like to change the taxonomy, you can set the "taxonomy" argument:`[taxonomy_image_plugin taxonomy="post_tags"]` or `[taxonomy_image_plugin taxonomy="my_custom_taxonomy_name"]`You can also change the size of the image by setting the size attribute:`[taxonomy_image_plugin size="medium"]` or ``[taxonomy_image_plugin size="detail"]``= Displaying Images in your Theme #1: Category, Tag + Custom Taxonomy archives =To display the images in your theme, you will want to use the following code in the appropriate theme file. The correct file will vary depending on your theme. category.php, tag.php, archive.php are a few file that this code will work in. Please see [Template Hierarchy](http://codex.wordpress.org/Template_Hierarchy) for more information.`<?php do_action( 'taxonomy_image_plugin_print_image_html', 'detail' ); ?>`Here we have passed to arguments to the WordPress core function do_action(). The first is `taxonomy_image_plugin_print_image_html` and should not be changed. The second represents the size of the image that you would like displayed. Acceptable values are: * detail* thumbnail* medium* large* fullsize= Displaying Images in your Theme #2: Category Thumbs =The following example was inspired by [this thread](http://wordpress.org/support/topic/364299) in the WordPress.org Support Fourms. This code can be placed inside any theme template and will produce a string of links for every taxonomy that has an associated image.`$cats = get_categories();foreach ( $cats as $c ) {	$url = get_category_link( $c->term_id );	$img = $taxonomy_images_plugin->get_image_html( 'detail', $c->term_taxonomy_id );	if( !empty( $img ) )		print '<a href="' . $url . '">' . $img . '</a>';}`= Support =If you find that this plugin is has a bug, does not play nicely with other plugins or if you have a suggestion or comment, please <a href="http://wordpress.org/tags/taxonomy-images?forum_id=10#postform">use this link to add a new thread to the WordPress Support Forum</a>= Hook it up yo! =If you have fallen in love with this plugin and would not be able to sleep without helping out in some way, please see the following list of ways that you can _hook it up yo!_:* __Rate it!__ - use the star tool on the right-hand sidebar of the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to tells me what you think.* __Let me know if it works__ - Use the _Compatibility_ widget on the [homepage](http://wordpress.org/extend/plugins/taxonomy-images/) to let me know that the current version works with your version of WordPress.* __Do you Twitter?__ Help promote by using this shortlink: [http://bit.ly/taxonomy-images](http://bit.ly/taxonomy-images)* __Are you a writer?__ Help promote by writing an article on your website about this plugin.* __Are you Super-Wicked-Awesome?__ If so, you can always [make a donation](http://mfields.org/donate/).==Installation==1. Download1. Unzip the package and upload to your /wp-content/plugins/ directory.1. Log into WordPress and navigate to the "Plugins" panel.1. Activate the plugin.==Changelog=== 0.4 =* __BUGFIX:__ get_thumb() now returns the fullsize url if there is no appropriate intermediate image.* __UPDATE:__ Added "taxonomy_images_shortcode".= 0.3 =* __COMPAT:__ Changed the firing order of every hook untilizing the 'category_rows' method to 15. This allows this plugin to be compatible with [Reveal IDs for WP Admin](http://wordpress.org/extend/plugins/reveal-ids-for-wp-admin-25/). Thanks to [Peter Kahoun](http://profiles.wordpress.org/kahi/)* __COMPAT:__ Added Version check for PHP5.* __UPDATE:__ `$settings` and `$locale` are now public properties.* __UPDATE:__ Object name changed to: $taxonomy_images_plugin.* __UPDATE:__ Added argument $term_tax_id to both print_image_html() and get_image_html().* __BUGFIX:__ Deleted the register_deactivation_hook() function -> sorry to all 8 who downloaded this plugin so far :)= 0.2 =* Original Release - Works With: wp 2.9.1.
