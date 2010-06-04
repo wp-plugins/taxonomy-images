@@ -1,11 +1,15 @@
 <?php
 /*
 Plugin Name: Taxonomy Images BETA
-Plugin URI: http://wordpress.org/extend/plugins/taxonomy-images/
+Plugin URI: http://wordpress.mfields.org/plugins/taxonomy-images/
 Description: The Taxonomy Images plugin enables you to associate images from your Media Library to categories, tags and taxonomies.
+<<<<<<< .mine
+Version: 0.4.2
+=======
 Version: 0.4
+>>>>>>> .r248938
 Author: Michael Fields
-Author URI: http://mfields.org/
+Author URI: http://wordpress.mfields.org/
 License: GPLv2
 
 Copyright 2010  Michael Fields  michael@mfields.org
@@ -26,10 +30,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 TODO LIST:
 	1.	Move inline styles to style tag in admin head.
 	2.	Set up for localization.
-	3.	Change name of media upload button so that it reflects tag and taxonomies.
-	4.	Make border appear around image on successful association.
-	5.	Support for Link Category Images?
-	6.	Add support for wp_list_categories() or create new functionality based on wp_list_categories()
+	3.	Make border appear around image on successful association.
+	4.	Support for Link Category Images?
+	5.	Add support for wp_list_categories() or create new functionality based on wp_list_categories()
+	6.	Add support for thumbnail generation of old images.
 */
 
 if( !function_exists( 'pr' ) ) {
@@ -85,10 +89,8 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			add_filter( 'media_meta', array( &$this, 'thumbnail_button' ), 10, 2 );
 			add_action( 'admin_head-media-upload-popup', array( &$this, 'media_popup_script' ), 2000 );
 			add_action( 'wp_ajax_' . $this->ajax_action, array( &$this, 'process_ajax' ), 10 );
-			
+						
 			/* Category Admin Hooks for backward compatibility with 2.9 branch. I think that these are deprecated hooks. */
-			add_filter( 'manage_categories_columns', array( &$this, 'category_columns' ) );
-			add_filter( 'manage_categories_custom_column', array( &$this, 'category_rows' ), 15, 3 );
 			
 			/* Category Admin Hooks. */
 			add_action( 'admin_print_scripts-categories.php', array( &$this, 'scripts' ) );
@@ -96,9 +98,21 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			add_filter( 'manage_category_columns', array( &$this, 'category_columns' ) );
 			add_filter( 'manage_category_custom_column', array( &$this, 'category_rows' ), 15, 3 );
 			
-			/* Tag + Taxonomy Admin Hooks. */
+			/* Hook into the custom column's rows in WordPress 3.0. */
+			global $wp_taxonomies;
+			foreach( $wp_taxonomies as $taxonomy => $taxonomies ) {
+				$hook = 'manage_' . $taxonomy . '_custom_column';
+				add_filter( $hook, array( &$this, 'category_rows' ), 10, 3 );
+			}
+			
+			/* Hook into the custom column's header. */
 			add_filter( 'manage_edit-tags_columns', array( &$this, 'category_columns' ) );
-			add_filter( 'manage_post_tag_custom_column', array( &$this, 'category_rows' ), 15, 3 );
+			
+			/* Hook into the custom column's rows + header in WordPress 2.9.x. */
+			add_filter( 'manage_categories_custom_column', array( &$this, 'category_rows' ), 15, 3 );
+			add_filter( 'manage_categories_columns', array( &$this, 'category_columns' ) );
+			
+			/* Tag + Taxonomy Admin Hooks. */
 			add_action( 'admin_print_scripts-edit-tags.php', array( &$this, 'scripts' ) );
 			add_action( 'admin_print_styles-edit-tags.php', array( &$this, 'styles' ) );
 			
@@ -267,7 +281,7 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 		public function thumbnail_button( $c, $post ) {
 			if( isset( $_GET[ $this->attr_slug ] ) ) {
 				$id = (int) $post->ID;
-				$text = __( 'Add Thumbnail to Category', $this->locale );
+				$text = __( 'Add Thumbnail to Taxonomy', $this->locale );
 				return $c . '<p style="margin:10px 0 0"><a rel="' . $id . '" class="button ' . $this->locale . '" href="#" onclick="return false;">' . $text . '</a></p>';
 			}
 		}
@@ -287,7 +301,7 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 		public function category_columns( $original_columns ) {
 			$new_columns = $original_columns;
 			array_splice( $new_columns, 1 ); /* isolate the checkbox column */
-			$new_columns['custom'] = __('Image', $this->locale ); /* Add custom column */
+			$new_columns['custom'] = __( 'Image', $this->locale ); /* Add custom column */
 			return array_merge( $new_columns, $original_columns ); 
 		}
 		private function term_tax_id( $term ) {
