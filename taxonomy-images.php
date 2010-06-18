@@ -3,11 +3,7 @@
 Plugin Name: Taxonomy Images BETA
 Plugin URI: http://wordpress.mfields.org/plugins/taxonomy-images/
 Description: The Taxonomy Images plugin enables you to associate images from your Media Library to categories, tags and taxonomies.
-<<<<<<< .mine
-Version: 0.4.2
-=======
-Version: 0.4
->>>>>>> .r248938
+Version: 0.4.3
 Author: Michael Fields
 Author URI: http://wordpress.mfields.org/
 License: GPLv2
@@ -42,6 +38,14 @@ if( !function_exists( 'pr' ) ) {
 	}
 }
 
+/* 2.9 Branch support */
+if( !function_exists( 'taxonomy_exists' ) ) {
+	function taxonomy_exists( $taxonomy ) {
+		global $wp_taxonomies;
+		return isset( $wp_taxonomies[$taxonomy] );
+	}
+}
+
 /**
 * @package Crop
 */
@@ -61,7 +65,6 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 		private $ajax_action = 'update_relationship';
 		private $attr_slug = 'mf_term_id';
 		private $detail_size = array( 75, 75, true );
-		private $core_taxonomies = array( 'category', 'post_tag', 'link_category' );
 		private $custom_taxonomies = array();
 		private $current_taxonomy = false;
 		private $plugin_basename = '';
@@ -75,13 +78,12 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			$this->settings = get_option( $this->locale );
 			$this->plugin_basename = plugin_basename( __FILE__ );
 			
-			/* Plugin Registration Hooks */
+			/* Plugin Activation Hooks */
 			register_activation_hook( __FILE__, array( &$this, 'activate' ) );
 			
 			/* General Hooks. */
 			add_action( 'init', array( &$this, 'add_new_image_size' ) );
 			add_action( 'admin_init', array( &$this, 'register_settings' ) );
-			add_action( 'admin_init', array( &$this, 'process_custom_taxonomies' ) );
 			add_action( 'admin_head', array( &$this, 'set_current_taxonomy' ), 10 );
 			add_action( 'wp_head', array( &$this, 'set_current_taxonomy' ), 10 );
 			
@@ -90,27 +92,17 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			add_action( 'admin_head-media-upload-popup', array( &$this, 'media_popup_script' ), 2000 );
 			add_action( 'wp_ajax_' . $this->ajax_action, array( &$this, 'process_ajax' ), 10 );
 						
-			/* Category Admin Hooks for backward compatibility with 2.9 branch. I think that these are deprecated hooks. */
-			
 			/* Category Admin Hooks. */
 			add_action( 'admin_print_scripts-categories.php', array( &$this, 'scripts' ) );
 			add_action( 'admin_print_styles-categories.php', array( &$this, 'styles' ) );
-			add_filter( 'manage_category_columns', array( &$this, 'category_columns' ) );
-			add_filter( 'manage_category_custom_column', array( &$this, 'category_rows' ), 15, 3 );
 			
-			/* Hook into the custom column's rows in WordPress 3.0. */
-			global $wp_taxonomies;
-			foreach( $wp_taxonomies as $taxonomy => $taxonomies ) {
-				$hook = 'manage_' . $taxonomy . '_custom_column';
-				add_filter( $hook, array( &$this, 'category_rows' ), 10, 3 );
-			}
+			/* 3.0 and beyond. Dynamically create hooks. */
+			add_action( 'admin_init', array( &$this, 'generate_column_and_row_filters' ) );
 			
-			/* Hook into the custom column's header. */
-			add_filter( 'manage_edit-tags_columns', array( &$this, 'category_columns' ) );
-			
-			/* Hook into the custom column's rows + header in WordPress 2.9.x. */
+			/* 2.9 Support - hook into taxonomy terms administration panel. */
 			add_filter( 'manage_categories_custom_column', array( &$this, 'category_rows' ), 15, 3 );
 			add_filter( 'manage_categories_columns', array( &$this, 'category_columns' ) );
+			add_filter( 'manage_edit-tags_columns', array( &$this, 'category_columns' ) );
 			
 			/* Tag + Taxonomy Admin Hooks. */
 			add_action( 'admin_print_scripts-edit-tags.php', array( &$this, 'scripts' ) );
@@ -120,6 +112,18 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			add_action( $this->locale . '_print_image_html', array( &$this, 'print_image_html' ), 1, 3 );
 			add_shortcode( $this->locale, array( &$this, 'list_term_images_shortcode' ) );
 			$this->debug_hooks();
+		}
+		/**
+		 * Dynamically hooks into administration panels for taxonomy terms.
+		 * @since 0.4.3
+		 * @uses $wp_taxonomies
+		 */
+		public function generate_column_and_row_filters() {
+			global $wp_taxonomies;	
+			foreach( $wp_taxonomies as $taxonomy => $taxonomies ) {
+				add_filter( 'manage_' . $taxonomy . '_custom_column', array( &$this, 'category_rows' ), 10, 3 );
+				add_filter( 'manage_edit-' . $taxonomy . '_columns', array( &$this, 'category_columns' ), 10, 3 );
+			}
 		}
 		public function get_fullsize_image_dimensions( $term_tax_id ) {
 			$post_id = ( array_key_exists( $term_tax_id, $this->settings ) )
@@ -142,7 +146,7 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			extract( shortcode_atts( $defaults, $atts ) );
 			
 			/* No taxonomy defined return an html comment. */
-			if( !is_taxonomy( $taxonomy ) ) {
+			if( !taxonomy_exists( $taxonomy ) ) {
 				$tax = strip_tags( trim( $taxonomy ) );
 				return '<!--' . $this->locale . ' error: Taxonomy "' . $taxonomy . '" is not defined.-->';
 			}
@@ -191,18 +195,6 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 				global $wp_query;
 				$q = $wp_query->get_queried_object();
 				$this->current_taxonomy = ( get_taxonomy( $q->taxonomy ) ) ? $q->taxonomy : false;
-			}
-		}
-		/*
-		* Creates filters for custom taxonomies for "category_rows".
-		*/
-		public function process_custom_taxonomies() {
-			global $wp_taxonomies;
-			foreach( $wp_taxonomies as $name => $data ) {
-				if( !in_array( $name, $this->core_taxonomies ) ) {
-					$this->custom_taxonomies[ $name ] = $data;
-					add_filter( 'manage_' . $name . '_custom_column', array( &$this, 'category_rows' ), 15, 3 );
-				}
 			}
 		}
 		public function add_new_image_size() {
@@ -282,8 +274,9 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			if( isset( $_GET[ $this->attr_slug ] ) ) {
 				$id = (int) $post->ID;
 				$text = __( 'Add Thumbnail to Taxonomy', $this->locale );
-				return $c . '<p style="margin:10px 0 0"><a rel="' . $id . '" class="button ' . $this->locale . '" href="#" onclick="return false;">' . $text . '</a></p>';
+				return $c . '<br /><br /><a rel="' . $id . '" class="button ' . $this->locale . '" href="#" onclick="return false;">' . $text . '</a>';
 			}
+			return $c;
 		}
 		public function scripts() { wp_enqueue_script( 'thickbox' ); }
 		public function styles() { wp_enqueue_style( 'thickbox' ); }
@@ -422,7 +415,7 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 						$term_id = (int) $_GET[ $this->attr_slug ];
 						$attr = $this->attr( $id );
 						$nonce = wp_create_nonce( $this->create_nonce_action( $this->ajax_action ) );
-						/* Decalre php Vars in Javascript */
+						/* Declare php Vars in Javascript */
 						print <<<EOF
 							var attr = '{$attr}';
 							var attrSlug = '{$this->attr_slug}';
