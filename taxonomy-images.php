@@ -3,7 +3,7 @@
 Plugin Name: Taxonomy Images BETA
 Plugin URI: http://wordpress.mfields.org/plugins/taxonomy-images/
 Description: The Taxonomy Images plugin enables you to associate images from your Media Library to categories, tags and taxonomies.
-Version: 0.4.3
+Version: 0.4.4
 Author: Michael Fields
 Author URI: http://wordpress.mfields.org/
 License: GPLv2
@@ -46,9 +46,6 @@ if( !function_exists( 'taxonomy_exists' ) ) {
 	}
 }
 
-/**
-* @package Crop
-*/
 if( !class_exists( 'taxonomy_images_plugin' ) ) {
 	/**
 	* Category Thumbs
@@ -324,7 +321,7 @@ if( !class_exists( 'taxonomy_images_plugin' ) ) {
 			
 			if( isset( $this->settings[ $term_tax_id ] ) ) {
 				$attachment_id = (int) $this->settings[ $term_tax_id ];
-				$alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt' );
+				$alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
 				$attachment = get_post( $attachment_id ); /* Just in case an attachment was deleted, but there is still a record for it in this plugins settings. */
 				if( $attachment !== NULL ) {
 					$o = get_image_tag( $attachment_id, $alt, '', $align, $size );
