@@ -1,41 +1,33 @@
-
 jQuery( document ).ready( function( $ ) {
-	
-	/* General UI. */
-	$( '.taxonomy-image-control .control' ).hover( 
-		function() { $( this ).css( 'cursor', 'pointer' ); },
-		function() { $( this ).css( 'cursor', 'default' ); }
-		);
-	$( '.taxonomy-image-control .upload' ).hover( 
-		function() { $( this ).css( 'background-position', '-15px 0' ); },
-		function() { $( this ).css( 'background-position', '0 0' ); }
-		);
-	$( '.taxonomy-image-control .delete' ).hover( 
-		function() { $( this ).css( 'background-position', '-45px 0' ); },
-		function() { $( this ).css( 'background-position', '-30px 0' ); }
-		);
-	$( '.taxonomy-image-control .library' ).hover( 
-		function() { $( this ).css( 'background-position', '-75px 0' ); },
-		function() { $( this ).css( 'background-position', '-60px 0' ); }
-		);
-	
-	/* Delete association via ajax. */
-	$( '.taxonomy-image-control .delete' ).click( function () {
-		var remove = $( this );
-		$.ajax({  
+
+	$( '.taxonomy-image-control a' ).live( 'click', function () {
+		taxonomyImagesPlugin.tt_id = parseInt( $( this ).parent().find( 'input.tt_id' ).val() );
+		taxonomyImagesPlugin.term_name = $( this ).parent().find( 'input.term_name' ).val();
+		taxonomyImagesPlugin.image_id = parseInt( $( this ).parent().find( 'input.image_id' ).val() );
+	} );
+
+	$( '.taxonomy-images-modal .remove' ).live( 'click', function () {
+		var tt_id = parseInt( $( this ).attr( 'rel' ) );
+		$.ajax( {
 			url: ajaxurl,
 			type: "POST",
-			dataType: 'json',							
+			dataType: 'json',
 			data: {
-				'action' : 'taxonomy_images_remove_association',
-				'term_id' : parseInt( $( this ).attr( 'rel' ) ),
-				'wp_nonce' : taxonomyImagesPlugin.nonce_remove
+				'action'   : 'taxonomy_image_plugin_remove_association',
+				'wp_nonce' : taxonomyImagesPlugin.nonce,
+				'tt_id'    : tt_id
 				},
 			cache: false,
-			success: function ( data, textStatus ) {
-				$( remove ).addClass( 'hide' );
-				$( remove ).parent().find( 'img' ).attr( 'src', taxonomyImagesPlugin.img_src );
-			}         
-		});
+			success: function ( response ) {
+				if ( 'good' === response.status ) {
+					$( '#remove-' + tt_id ).addClass( 'hide' );
+					$( '#taxonomy_image_plugin_' + tt_id ).attr( 'src', taxonomyImagesPlugin.img_src );
+				}
+				else if ( 'bad' === response.status ) {
+					alert( response.why );
+				}
+			}
+		} );
+		return false;
 	} );
 } );
