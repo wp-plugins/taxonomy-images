@@ -3,7 +3,7 @@
 Plugin Name:          Taxonomy Images
 Plugin URI:           http://wordpress.mfields.org/plugins/taxonomy-images/
 Description:          Associate images from your media library to categories, tags and custom taxonomies.
-Version:              0.7
+Version:              0.7.1
 Author:               Michael Fields
 Author URI:           http://wordpress.mfields.org/
 License:              GPLv2
@@ -434,7 +434,7 @@ function taxonomy_image_plugin_get_term_info( $tt_id ) {
 		return $cache[$tt_id];
 	}
 	global $wpdb;
-	$data = $wpdb->get_results( $wpdb->prepare( "SELECT term_id, taxonomy FROM $wpdb->term_taxonomy WHERE term_taxonomy_id = %s LIMIT 1", $tt_id ) );
+	$data = $wpdb->get_results( $wpdb->prepare( "SELECT term_id, taxonomy FROM $wpdb->term_taxonomy WHERE term_taxonomy_id = %d LIMIT 1", $tt_id ) );
 	if ( isset( $data[0]->term_id ) ) {
 		$cache[$tt_id]['term_id'] = absint( $data[0]->term_id );
 	}
@@ -1087,10 +1087,6 @@ function taxonomy_image_plugin_check_taxonomy( $taxonomy, $filter ) {
 	$settings = get_option( 'taxonomy_image_plugin_settings' );
 
 	if ( ! isset( $settings['taxonomies'] ) ) {
-		$link = '';
-		if ( current_user_can( 'manage_options' ) ) {
-			$link = '<a href="' . esc_url(  ) . '">' . esc_html__( 'Manage settings.', 'taxonomy-images' ) . '</a>';
-		}
 		trigger_error( sprintf( esc_html__( 'No taxonomies have image support. %1$s', 'taxonomy-images' ), taxonomy_images_plugin_settings_page_link() ) );
 		return false;
 	}
